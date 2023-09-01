@@ -40,7 +40,6 @@ type diskInfo struct {
 
 func main() {
 
-	// Obter informações do sistema
 	osInfo := runtime.GOOS
 	archInfo := runtime.GOARCH
 	hostname, err := os.Hostname()
@@ -49,21 +48,18 @@ func main() {
 		return
 	}
 
-	// Obter uso da CPU
 	cpuUsage, err := cpu.Percent(time.Second, false)
 	if err != nil {
 		fmt.Println("Erro ao obter o uso da CPU:", err)
 		return
 	}
 
-	// Obter informações de memória
 	memoryInfo, err := mem.VirtualMemory()
 	if err != nil {
 		fmt.Println("Erro ao obter informações de memória:", err)
 		return
 	}
 
-	// Obter informações de disco
 	partitions, err := disk.Partitions(true)
 	if err != nil {
 		fmt.Println("Erro ao obter informações de disco:", err)
@@ -87,19 +83,16 @@ func main() {
 		})
 	}
 
-	// Obter informações de temperatura
 	tempInfo, err := host.SensorsTemperatures()
 	var temperature float64
 	if err == nil && len(tempInfo) > 0 {
 		temperature = tempInfo[0].Temperature
 	}
 
-	// Calcular o score do sistema (exemplo simples)
-	cpuScore := 100 - cpuUsage[0] // Quanto menor o uso da CPU, melhor
-	memScore := 100 - memoryInfo.UsedPercent // Quanto menos memória usada, melhor
+	cpuScore := 100 - cpuUsage[0] 
+	memScore := 100 - memoryInfo.UsedPercent	
 	score := (cpuScore + memScore) / 2
 
-	// Criar uma estrutura SystemInfo com as informações
 	info := SystemInfo{
 		OS:           osInfo,
 		Arch:         archInfo,
@@ -112,7 +105,6 @@ func main() {
 		SystemScore:  score,
 	}
 
-	// Converter a estrutura para JSON
 	jsonData, err := json.MarshalIndent(info, "", "    ")
 	if err != nil {
 		fmt.Println("Erro ao converter para JSON:", err)
@@ -124,7 +116,6 @@ func main() {
 		isCritical = true
 	}
 
-	// Caminho do arquivo de saída
 	var outputFile string
 	if isCritical {
 		outputFile = "./data/critical/" + time.Now().Format("2006-01-02_15-04-05") + ".json"
@@ -132,7 +123,6 @@ func main() {
 		outputFile = "./data/" + time.Now().Format("2006-01-02_15-04-05") + ".json"
 	}
 
-	// Salvar as informações em um arquivo JSON
 	err = writeToFile(outputFile, jsonData)
 	if err != nil {
 		fmt.Println("Erro ao salvar as informações em um arquivo:", err)
@@ -141,7 +131,6 @@ func main() {
 
 	fmt.Printf("Informações do sistema salvas em %s\n", outputFile)
 
-	// Verificar se o arquivo foi salvo na pasta "critical" e enviar um e-mail se necessário
 	if isCritical {
 		err := sendEmail(outputFile)
 		if err != nil {
@@ -171,7 +160,6 @@ func sendEmail(attachmentPath string) error {
 		return err
 	}
 
-	// Configurar a mensagem de e-mail
 	msg := "Subject: Arquivo crítico salvo\n" +
         "To: " + recipient + "\n" +
         "From: " + sender + "\n" +
@@ -179,22 +167,18 @@ func sendEmail(attachmentPath string) error {
         "Content-Type: text/html; charset=\"UTF-8\";\n\n" +
         "O arquivo crítico foi salvo e está em anexo."
 
-    // Autenticar no servidor SMTP
     auth := smtp.PlainAuth("", smtpUsername, smtpPassword, smtpServer)
 
-	// Configurar o cliente SMTP
 	client, err := smtp.Dial(smtpServer + ":" + strconv.Itoa(smtpPort))
 	if err != nil {
 		return err
 	}
 	defer client.Close()
 
-	// Autenticar com o servidor SMTP
 	if err = client.Auth(auth); err != nil {
 		return err
 	}
 
-	// Configurar o remetente e destinatário
 	if err = client.Mail(sender); err != nil {
 		return err
 	}
@@ -202,20 +186,17 @@ func sendEmail(attachmentPath string) error {
 		return err
 	}
 
-	// Abrir um fluxo de escrita para o corpo do e-mail
 	wc, err := client.Data()
 	if err != nil {
 		return err
 	}
 	defer wc.Close()
 
-	// Escrever a mensagem de e-mail
 	_, err = fmt.Fprint(wc, msg)
 	if err != nil {
 		return err
 	}
 
-	// Adicionar o anexo (arquivo JSON crítico)
 	attachment, err := os.Open(attachmentPath)
 	if err != nil {
 		return err
